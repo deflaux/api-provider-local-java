@@ -1,4 +1,4 @@
-readstore-local-java
+api-provider-local-java
 ====================
 
 Getting started  
