@@ -61,5 +61,5 @@ Goals
 
 Current status
 ~~~~~~~~~~~~~~
-This code is in stasis. All improvements are welcome, nothing is
-currently planned. (Except maybe some refactoring to take advantage of java 1.8)
+
+One big TODO - add support for the Variant related APIs by reading from local VCF files. No one has claimed this yet.
