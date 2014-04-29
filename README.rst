@@ -9,12 +9,12 @@ Getting started
 
 To use, first build the code using `Apache Maven <http://maven.apache.org/download.cgi>`_::
 
-  cd readstore-local-java
+  cd api-provider-local-java
   mvn package
 
 Once built, use the jar file to start a local server::
 
-  java -cp target/readstore-local-java-v1beta-jar-with-dependencies.jar com.google.cloud.genomics.localrepo.Server --dataset=testdata:testdata
+  java -cp target/api-provider-local-java-v1beta-jar-with-dependencies.jar com.google.cloud.genomics.localrepo.Server --dataset=testdata:testdata
 
 There are two command line flags available:
 
