@@ -1,5 +1,8 @@
-api-provider-local-java
-====================
+api-provider-local-java  |Build Status|_
+==============================
+
+.. |Build Status| image:: https://travis-ci.org/googlegenomics/api-provider-local-java.png?branch=master
+.. _Build Status: https://travis-ci.org/googlegenomics/api-provider-local-java
 
 Getting started  
 ---------------
