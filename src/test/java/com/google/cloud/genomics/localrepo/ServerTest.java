@@ -35,6 +35,7 @@ import org.junit.Test;
 import org.junit.runner.RunWith;
 import org.junit.runners.JUnit4;
 
+import java.io.File;
 import java.util.Arrays;
 import java.util.Collections;
 import java.util.List;
@@ -45,10 +46,14 @@ import javax.ws.rs.client.Entity;
 @RunWith(JUnit4.class)
 public class ServerTest extends BaseTest {
 
-  private static final Dataset
-      DATASET = DATASET_DIR.getDataset();
-  private static final String
-      USER_DIR = System.getProperty("user.dir");
+  private static final Dataset DATASET = DATASET_DIR.getDataset();
+  private static final String USER_DIR = System.getProperty("user.dir");
+  private static final String TESTDATA_DIR = "file://" + USER_DIR + File.separator + "testdata";
+
+  private static String makeFileUri(String bamName) {
+    return TESTDATA_DIR + File.separator + bamName;
+  }
+
   private static final List<Readset.FileData.Header>
       HEADERS = Arrays.asList(createHeader("1.0", "coordinate"));
   private static final List<Readset.FileData.RefSequence>
@@ -62,14 +67,14 @@ public class ServerTest extends BaseTest {
   private static final List<Readset.FileData>
       FILE_DATA = Arrays.asList(
           Readset.FileData.create(
-              String.format("file://%s/testdata/bam1.bam", USER_DIR),
+              makeFileUri("bam1.bam"),
               HEADERS,
               REF_SEQUENCES,
               Arrays.asList(READ_GROUP_1, READ_GROUP_2, READ_GROUP_3, READ_GROUP_4),
               Collections.<Readset.FileData.Program>emptyList(),
               Collections.<String>emptyList()),
           Readset.FileData.create(
-              String.format("file://%s/testdata/bam2.bam", USER_DIR),
+              makeFileUri("bam2.bam"),
               HEADERS,
               REF_SEQUENCES,
               Arrays.asList(READ_GROUP_2, READ_GROUP_3, READ_GROUP_4, READ_GROUP_5),
@@ -78,7 +83,7 @@ public class ServerTest extends BaseTest {
   private static final List<Readset.FileData>
       BAM3_FILE_DATA = Arrays.asList(
           Readset.FileData.create(
-              String.format("file://%s/testdata/bam3.bam", USER_DIR),
+              makeFileUri("bam3.bam"),
               HEADERS,
               REF_SEQUENCES,
               Arrays.asList(createReadGroup(null, "unknown")),
