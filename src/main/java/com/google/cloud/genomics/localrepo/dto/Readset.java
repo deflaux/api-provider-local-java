@@ -417,6 +417,7 @@ public class Readset extends DataTransferObject {
       @JsonProperty("datasetId") String datasetId,
       @JsonProperty("created") long created,
       @JsonProperty("fileData") List<FileData> fileData) {
+    fileData.sort((o1, o2) -> o1.getFileUri().compareTo(o2.getFileUri()));
     return new Readset(id, name, datasetId, created, fileData);
   }
 
