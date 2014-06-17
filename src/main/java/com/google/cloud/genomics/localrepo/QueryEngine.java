@@ -36,17 +36,7 @@ import java.io.File;
 import java.io.ObjectInputStream;
 import java.io.ObjectOutputStream;
 import java.io.Serializable;
-import java.util.ArrayList;
-import java.util.Collections;
-import java.util.Comparator;
-import java.util.HashMap;
-import java.util.Iterator;
-import java.util.List;
-import java.util.Map;
-import java.util.Objects;
-import java.util.Optional;
-import java.util.Spliterator;
-import java.util.Spliterators;
+import java.util.*;
 import java.util.function.BiPredicate;
 import java.util.function.Consumer;
 import java.util.function.Function;
@@ -172,10 +162,12 @@ public class QueryEngine {
 
     private static final SAMRecordComparator COMPARATOR = new SAMRecordCoordinateComparator();
 
+    final File file;
     final SAMRecord record;
     final int skip;
 
-    SAMRecordWithSkip(SAMRecord record, int skip) {
+    SAMRecordWithSkip(File file, SAMRecord record, int skip) {
+      this.file = file;
       this.record = record;
       this.skip = skip;
     }
@@ -215,9 +207,10 @@ public class QueryEngine {
 
   private final Map<String, DatasetDirectory> datasets;
   private final Map<File, IndexedBamFile> getBamFile;
+  private final Map<File, DatasetDirectory> getDataset;
   private final Function<String, Stream<String>> getReadsetIds;
   private final int pageSize;
-  private final Map<String, String> readsetIdsBySample;
+
   private final Map<String, BamFilesReadset> readsets;
 
   private QueryEngine(
@@ -236,9 +229,15 @@ public class QueryEngine {
         .collect(Collectors.toSet())
         .stream()
         .collect(Collectors.toMap(BamFile::getFile, Function.identity()));
-    this.readsetIdsBySample = readsets.values()
-        .stream()
-        .collect(Collectors.toMap(BamFilesReadset::getSample, BamFilesReadset::getReadsetId));
+
+    // TODO: Use Java 8
+    this.getDataset = new HashMap<>();
+    for (BamFilesReadset readset : readsets.values()) {
+      DatasetDirectory dataset = datasets.get(readset.getDatasetId());
+      for (IndexedBamFile bamFile : readset.getBamFiles()) {
+        getDataset.put(bamFile.getFile(), dataset);
+      }
+    }
     this.pageSize = pageSize;
   }
 
@@ -271,11 +270,15 @@ public class QueryEngine {
     return record.getReadGroup() == null ? Readset.DEFAULT_SAMPLE : record.getReadGroup().getSample();
   }
 
-  private Read read(SAMRecord record) {
+  private String getReadsetId(File file, SAMRecord record) {
+    return getDataset.get(file).readsetIdsBySample.get().get(getSample(record));
+  }
+
+  private Read read(String readsetId, SAMRecord record) {
     return Read.create(
         toRead(record.getReadName()),
         toRead(record.getReadName()),
-        readsetIdsBySample.get(getSample(record)),
+        readsetId,
         record.getFlags(),
         toRead(record.getReferenceName()),
         toRead(record.getAlignmentStart(), 0),
@@ -296,14 +299,15 @@ public class QueryEngine {
   }
 
   private SearchReadsResponse searchReads(Map<File, PeekingIterator<SAMRecordWithSkip>> iterators,
-      final int end, Predicate<SAMRecord> readsetFilter) {
+      final int end, Predicate<String> readsetFilter) {
     List<Read> reads = new ArrayList<>();
     for (Iterator<SAMRecordWithSkip> iterator =
         Iterators.limit(Iterators.mergeSorted(iterators.values(), Comparator.naturalOrder()),
             pageSize); iterator.hasNext();) {
-      SAMRecord record = iterator.next().record;
-      if (readsetFilter.test(record)) {
-        reads.add(read(record));
+      SAMRecordWithSkip next = iterator.next();
+      String readsetId = getReadsetId(next.file, next.record);
+      if (readsetFilter.test(readsetId)) {
+        reads.add(read(readsetId, next.record));
       }
     }
     Map<File, PeekingIterator<SAMRecordWithSkip>> nonEmptyIterators =
@@ -324,7 +328,7 @@ public class QueryEngine {
   }
 
   private SearchReadsResponse searchReads(final QueryDescriptor descriptor,
-      final Predicate<SAMRecord> readsetFilter) {
+      final Predicate<String> readsetFilter) {
     abstract class RecursiveProcessor<X, Y, Z> {
 
       abstract void close(Y value);
@@ -372,7 +376,8 @@ public class QueryEngine {
       @Override
       SearchReadsResponse process(Map<Map.Entry<File, QueryDescriptor.Start>, SAMFileReader> map) {
         final int end = descriptor.getEnd();
-        return new RecursiveProcessor<Map.Entry<Map.Entry<File, QueryDescriptor.Start>, SAMFileReader>, SAMRecordIterator, SearchReadsResponse>() {
+        return new RecursiveProcessor<Map.Entry<Map.Entry<File, QueryDescriptor.Start>, SAMFileReader>,
+            SAMRecordIterator, SearchReadsResponse>() {
 
           @Override
           void close(SAMRecordIterator iterator) {
@@ -422,7 +427,8 @@ public class QueryEngine {
             Map<File, PeekingIterator<SAMRecordWithSkip>> iterators = new HashMap<>();
             for (Map.Entry<Map.Entry<Map.Entry<File, QueryDescriptor.Start>, SAMFileReader>, SAMRecordIterator> entry : map
                 .entrySet()) {
-              iterators.put(entry.getKey().getKey().getKey(), Iterators.peekingIterator(partition(
+              File file = entry.getKey().getKey().getKey();
+              iterators.put(file, Iterators.peekingIterator(partition(
                   entry.getValue(),
                   (lhs, rhs) -> Objects.equals(lhs.getReferenceIndex(), rhs.getReferenceIndex())
                   && Objects.equals(lhs.getAlignmentStart(), rhs.getAlignmentStart()))
@@ -432,7 +438,7 @@ public class QueryEngine {
 
                     @Override
                     public SAMRecordWithSkip apply(SAMRecord record) {
-                      return new SAMRecordWithSkip(record, skip++);
+                      return new SAMRecordWithSkip(file, record, skip++);
                     }
                   })).flatMap(Function.identity()).iterator()));
             }
@@ -444,12 +450,9 @@ public class QueryEngine {
   }
 
   public SearchReadsResponse searchReads(SearchReadsRequest request) {
-    return searchReads(
-        createQueryDescriptor(request),
-        Predicates.compose(
-            Predicates.in(getReadsets(request.getDatasetIds(), request.getReadsetIds()).map(
-                BamFilesReadset::getReadsetId).collect(Collectors.toSet())),
-                Functions.forMap(readsetIdsBySample).compose(
-                    record -> getSample(record))));
+    Collection<String> readsetIds = getReadsets(request.getDatasetIds(), request.getReadsetIds()).map(
+        BamFilesReadset::getReadsetId).collect(Collectors.toSet());
+
+    return searchReads(createQueryDescriptor(request), Predicates.in(readsetIds));
   }
 }

@@ -193,6 +193,10 @@ public class DatasetDirectory {
         }
       });
 
+  public final Supplier<Map<String, String>> readsetIdsBySample = Suppliers.memoize(
+      () -> readsets.get().values().stream()
+          .collect(Collectors.toMap(BamFilesReadset::getSample, BamFilesReadset::getReadsetId)));
+
   private DatasetDirectory(Dataset dataset, Path directory) {
     this.dataset = dataset;
     this.directory = directory;
