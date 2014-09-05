@@ -54,22 +54,8 @@ There are two command line flags available:
 
 Go to ``http://localhost:<portnum>/datasets`` to see your data.  
 
-Code layout
------------
-
-Coming soon!
-
 
 Project status
 --------------
 
-Goals
-~~~~~
-* Provide an example of how the Genomics APIs can be implemented directly
-  from local files.
-
-
-Current status
-~~~~~~~~~~~~~~
-
-One big TODO - add support for the Variant related APIs by reading from local VCF files. No one has claimed this yet.
+This repository has been replaced by the work on `ga4gh/server <http://github.com/ga4gh/server>`_.
