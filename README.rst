@@ -4,6 +4,13 @@ api-provider-local-java  |Build Status|_
 .. |Build Status| image:: https://travis-ci.org/googlegenomics/api-provider-local-java.png?branch=master
 .. _Build Status: https://travis-ci.org/googlegenomics/api-provider-local-java
 
+
+Note: this repo supports v0.1 of the GA4GH APIs. There is a different 
+`python server <https://github.com/ga4gh/server>`_ that will support v0.5 
+and will make this repo obsolete.
+
+.....
+
 Getting started  
 ---------------
 
