@@ -5,14 +5,14 @@ api-provider-local-java  |Build Status|_
 .. _Build Status: https://travis-ci.org/googlegenomics/api-provider-local-java
 
 
-Note: this repo supports v0.1 of the GA4GH APIs. There is a different 
-`python server <https://github.com/ga4gh/server>`_ that will support v0.5 
-and will make this repo obsolete.
+**api-provider-local-java is deprecated.**  Please see https://github.com/ga4gh/server for the up-to-date GA4GH reference server.  **This repository will be deleted on March 10, 2016.**
 
 .....
 
 Getting started  
 ---------------
+
+Note: this repo supports v0.1 of the GA4GH APIs. The `python server <https://github.com/ga4gh/server>`_ supports v0.5+ and makes this repo obsolete.
 
 To use, first build the code using `Apache Maven <http://maven.apache.org/download.cgi>`_::
 
